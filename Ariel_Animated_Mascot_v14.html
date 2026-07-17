@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ari'el Animated Mascot — 60 Interaction Demo v14</title>
+<style>
+  :root {
+    --panel: rgba(14, 13, 22, 0.78);
+    --panel2: rgba(24, 22, 38, 0.88);
+    --line: rgba(255,255,255,0.12);
+    --text: #f3efff;
+    --muted: #bfb4d9;
+    --accent: #d29cff;
+    --accent2: #8ce1ff;
+    --good: #d9fca0;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 42%, #17111f 0%, #0d0a12 56%, #070609 100%);
+    font-family: Inter, Segoe UI, Arial, sans-serif;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: default;
+  }
+  #hud {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    width: min(410px, calc(100vw - 28px));
+    display: grid;
+    gap: 10px;
+    pointer-events: none;
+    z-index: 20;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 18px 60px rgba(0,0,0,.30);
+    backdrop-filter: blur(12px);
+  }
+  #topPanel {
+    width: 100%;
+    padding: 12px 14px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 4px;
+  }
+  .title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .meta {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .current {
+    margin-top: 10px;
+    color: var(--text);
+    font-weight: 700;
+    font-size: 17px;
+  }
+  .speech {
+    margin-top: 8px;
+    color: #e8ddff;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  .controls {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    pointer-events: auto;
+  }
+  button {
+    border: 1px solid var(--line);
+    background: var(--panel2);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font: inherit;
+    cursor: pointer;
+  }
+  button:hover {
+    border-color: var(--accent);
+  }
+  #board {
+    width: 100%;
+    max-height: 60vh;
+    overflow: auto;
+    padding: 10px;
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    pointer-events: auto;
+  }
+  #board.show { display: grid; }
+  .pool {
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 10px;
+  }
+  .pool.active {
+    border-color: rgba(210,156,255,.42);
+    box-shadow: inset 0 0 0 1px rgba(210,156,255,.18);
+  }
+  .pool h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .pool h3 span {
+    display: block;
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .pool ol {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .pool li {
+    color: #cdc4e4;
+    font-size: 12px;
+    line-height: 1.35;
+    margin: 0 0 6px;
+    padding: 3px 4px;
+    border-radius: 8px;
+  }
+  .pool li.active {
+    background: rgba(210,156,255,.18);
+    color: #fff;
+  }
+  .pool li.done {
+    color: var(--good);
+  }
+  .tip {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  @media (max-width: 720px) {
+    #hud { top: 8px; right: 8px; width: min(360px, calc(100vw - 16px)); }
+    #board { max-height: 44vh; }
+    .title { font-size: 18px; }
+  }
+  body.embed-mode { background: transparent !important; }
+  body.embed-mode #hud, body.embed-mode #board { display:none !important; }
+</style>
+</head>
+<body><script>if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('embed-mode');</script>
+<canvas id="scene"></canvas>
+<div id="hud">
+  <div class="panel" id="topPanel">
+    <div class="eyebrow">Autonomous Demo Showcase</div>
+    <div class="title">Ari’el — 60 Interaction Cycle v14</div>
+    <div class="meta"><span id="counter">0 / 60</span> · <span id="poolName">Preparing demo…</span></div>
+    <div class="current" id="currentLabel">Waiting for Ari’el to begin.</div>
+    <div class="speech" id="speechLabel">Speech will appear here when she talks.</div>
+    <div class="controls">
+      <button id="restartBtn">Restart demo</button>
+      <button id="pauseBtn">Pause demo</button>
+      <button id="helloBtn">Say hello</button>
+      <button id="listBtn">Show all 60</button>
+    </div>
+    <div class="tip">Ari’el performs all 60 interactions in order, with a clear pause between each one. Click her to hear the greeting. Head acting now uses softer anticipation, smoother feature slides, and calmer left, right, up, and down looks for more natural animation.</div>
+  </div>
+  <div class="panel" id="board"></div>
+</div>
+<script>
+(() => {
+  const EMBED_MODE = new URLSearchParams(location.search).get('embed') === '1';
+  if (EMBED_MODE) {
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
+    const hud = document.getElementById('hud');
+    if (hud) hud.style.display = 'none';
+  }
+  const canvas = document.getElementById('scene');
+  const ctx = canvas.getContext('2d');
+
+  const counterEl = document.getElementById('counter');
+  const poolNameEl = document.getElementById('poolName');
+  const currentLabelEl = document.getElementById('currentLabel');
+  const speechLabelEl = document.getElementById('speechLabel');
+  const boardEl = document.getElementById('board');
+  const restartBtn = document.getElementById('restartBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const helloBtn = document.getElementById('helloBtn');
+  const listBtn = document.getElementById('listBtn');
+
+  let dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  let W = 0, H = 0;
+  function resize() {
+    W = innerWidth;
+    H = innerHeight;
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener('resize', resize);
+  resize();
+
+  const path = [
+    [0.15, 0.22], [0.78, 0.18], [0.84, 0.58], [0.60, 0.76],
+    [0.26, 0.66], [0.18, 0.32], [0.44, 0.18]
+  ];
+
+  let pos = { x: W * 0.34, y: H * 0.50 };
+  let vel = { x: 0, y: 0 };
+  let targetIndex = 3;
+  let target = { x: W * path[targetIndex][0], y: H * path[targetIndex][1] };
+  let targetOverride = null;
+  let last = performance.now();
+  let lastSwitch = performance.now();
+  let nextAutoInteraction = performance.now() + (EMBED_MODE ? 7000 : 2200);
+  let interactionUntil = 0;
+  let paused = false;
+  let activeInteraction = null;
+  let activeSpokenText = '';
+  let gesture = 'rest';
+  let eyeLookX = 0;
+  let eyeLookY = 0;
+  let scaleIntent = 0;
+  let bobPhase = 0;
+  let blink = 0;
+  let lean = 0;
+  let currentScale = 1;
+  let baseScale = 0.96;
+  let currentHit = { x: pos.x, y: pos.y, r: 80 };
+  let cursorPos = { x: W * .5, y: H * .5, active: false };
+  let movementFreedom = Number(localStorage.getItem('ariel_movement_embed') ?? .65);
+  let reactivity = Number(localStorage.getItem('ariel_reactivity_embed') ?? .70);
+  let userSize = Number(localStorage.getItem('ariel_size_embed') ?? 1);
+  let manualAnchor = {x:pos.x,y:pos.y};
+  let dragging = false;
+  let dragMoved = false;
+  let dragStart = {x:0,y:0};
+  let dragOffset = {x:0,y:0};
+  let reactiveFocus = null;
+  let reactiveFocusUntil = 0;
+  let lastPointerMove = performance.now();
+
+  // Reactive wind / wing audio. Web Audio is unlocked by the first user gesture.
+  let audioCtx = null;
+  let windSource = null;
+  let windFilter = null;
+  let windGain = null;
+  let windPanner = null;
+  let wingOsc = null;
+  let wingHarmonic = null;
+  let wingFilter = null;
+  let wingGain = null;
+  let audioUnlocked = false;
+
+  function initWindAudio() {
+    if (audioUnlocked) {
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+      return;
+    }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    audioCtx = new AC();
+    const seconds = 2;
+    const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * seconds, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let lastNoise = 0;
+    for (let i = 0; i < data.length; i++) {
+      const white = Math.random() * 2 - 1;
+      lastNoise = lastNoise * 0.985 + white * 0.015;
+      data[i] = lastNoise * 3.2;
+    }
+    windSource = audioCtx.createBufferSource();
+    windSource.buffer = buffer;
+    windSource.loop = true;
+    windFilter = audioCtx.createBiquadFilter();
+    windFilter.type = 'bandpass';
+    windFilter.frequency.value = 950;
+    windFilter.Q.value = 0.7;
+    windGain = audioCtx.createGain();
+    windGain.gain.value = 0.0001;
+    windPanner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+    windSource.connect(windFilter);
+    windFilter.connect(windGain);
+    wingOsc = audioCtx.createOscillator();
+    wingOsc.type = 'sawtooth';
+    wingOsc.frequency.value = 92;
+    wingHarmonic = audioCtx.createOscillator();
+    wingHarmonic.type = 'triangle';
+    wingHarmonic.frequency.value = 184;
+    wingFilter = audioCtx.createBiquadFilter();
+    wingFilter.type = 'lowpass';
+    wingFilter.frequency.value = 1100;
+    wingFilter.Q.value = 0.8;
+    wingGain = audioCtx.createGain();
+    wingGain.gain.value = 0.0001;
+    wingOsc.connect(wingFilter);
+    wingHarmonic.connect(wingFilter);
+    wingFilter.connect(wingGain);
+    if (windPanner) {
+      windGain.connect(windPanner);
+      wingGain.connect(windPanner);
+      windPanner.connect(audioCtx.destination);
+    } else {
+      windGain.connect(audioCtx.destination);
+      wingGain.connect(audioCtx.destination);
+    }
+    windSource.start();
+    wingOsc.start();
+    wingHarmonic.start();
+    audioUnlocked = true;
+    audioCtx.resume().catch(()=>{});
+  }
+
+  function updateWindAudio(now) {
+    if (!audioUnlocked || !audioCtx || !windGain || !windFilter) return;
+    const speed = Math.min(1, Math.hypot(vel.x, vel.y) / 1.45);
+    const active = !paused && movementFreedom > .04 && !dragging;
+    const near = clamp((currentScale - .72) / .62, 0, 1);
+    const flutter = .82 + Math.sin(now * .052) * .14 + Math.sin(now * .031) * .08;
+    const targetGain = active ? (0.022 + speed * 0.16) * (0.55 + near * 0.95) * flutter : 0.0001;
+    const t = audioCtx.currentTime;
+    windGain.gain.cancelScheduledValues(t);
+    windGain.gain.setTargetAtTime(Math.max(0.0001, targetGain), t, 0.045);
+    windFilter.frequency.setTargetAtTime(720 + speed * 1900 + near * 360, t, 0.06);
+    windFilter.Q.setTargetAtTime(0.55 + speed * 1.1, t, 0.08);
+    if (wingGain && wingOsc && wingHarmonic) {
+      // An audible, double-pulsed hummingbird wingbeat layered over the wind.
+      const beatRate = 0.055 + speed * 0.045;
+      const pulse = 0.32 + 0.68 * Math.pow(Math.abs(Math.sin(now * beatRate)), 2.4);
+      const wingLevel = (0.011 + speed * 0.040) * pulse * (0.55 + near * 0.85);
+      const fundamental = 82 + speed * 68 + near * 12;
+      wingGain.gain.setTargetAtTime(active ? wingLevel : 0.0001, t, active ? 0.018 : 0.075);
+      wingOsc.frequency.setTargetAtTime(fundamental, t, 0.045);
+      wingHarmonic.frequency.setTargetAtTime(fundamental * 2.03, t, 0.045);
+      if (wingFilter) wingFilter.frequency.setTargetAtTime(850 + speed * 950 + near * 250, t, 0.06);
+    }
+    if (windPanner) windPanner.pan.setTargetAtTime(clamp((pos.x / Math.max(1,W)) * 2 - 1, -1, 1), t, 0.05);
+  }
+
+  let speaking = false;
+  let activeUtterance = null;
+  let voice = null;
+  let greetingQueued = false;
+  let hasSpokenGreeting = false;
+  let mouthOpen = 0;
+  let mouthCue = 'closed';
+  let mouthCueUntil = 0;
+  let speechBeat = 0;
+  let fallbackLipTimer = null;
+  let headPoseX = 0;
+  let headPoseY = 0;
+  let headVX = 0;
+  let headVY = 0;
+  let lastHeadIntentX = 0;
+  let lastHeadIntentY = 0;
+  let gazeX = 0;
+  let gazeY = 0;
+  let speechEmphasisX = 0;
+  let speechEmphasisY = 0;
+  let speechAccentFlip = 1;
+  const HELLO_STATEMENT = "Hello world. I'm Ari'el, your VR Quest guide. Click me whenever you'd like to hear me again.";
+
+  const ACTION_DURATION_MS = 5200;
+  const SPOKEN_ACTION_EXTRA_MS = 1600;
+  const BETWEEN_ACTION_PAUSE_MS = EMBED_MODE ? 9500 : 3000;
+
+  const poolNames = [
+    'Quarter 1 — Flight and exploration',
+    'Quarter 2 — Social presence',
+    'Quarter 3 — Teaching and guidance',
+    'Quarter 4 — Personality and rest'
+  ];
+
+  const interactionPools = [
+    [
+      {id:'approach', label:'Fly toward the camera, look around, and ask if anyone is home', mode:'approachScan', speech:'Is anyone home?'},
+      {id:'scan', label:'Look around the room', mode:'scan'},
+      {id:'home', label:'Ask if anyone is home', mode:'listen', speech:'Is anyone home?'},
+      {id:'loop', label:'Make a gentle loop', mode:'loop'},
+      {id:'bank', label:'Lean into a turn', mode:'bank'},
+      {id:'near', label:'Fly close, then drift back', mode:'near', speech:'I was just checking in.'},
+      {id:'high', label:'Climb toward the top', mode:'high'},
+      {id:'low', label:'Dip toward the bottom', mode:'low'},
+      {id:'hover', label:'Hover in place', mode:'hover'},
+      {id:'spiral', label:'Small upward spiral', mode:'spiral'},
+      {id:'cross', label:'Cross the screen', mode:'cross'},
+      {id:'peek-left', label:'Peek from the left', mode:'peekLeft'},
+      {id:'peek-right', label:'Peek from the right', mode:'peekRight'},
+      {id:'cursor-follow', label:'Follow the cursor', mode:'cursorFollow'},
+      {id:'cursor-dodge', label:'Dodge the cursor', mode:'cursorDodge'}
+    ],
+    [
+      {id:'hello', label:'Say hello', mode:'wave', speech:"Hello world. I'm Ari'el."},
+      {id:'wave', label:'Wave hello', mode:'wave'},
+      {id:'still-there', label:'Check whether the user is still there', mode:'listen', speech:'Still with me?'},
+      {id:'help', label:'Offer help', mode:'offer', speech:'Need help finding something?'},
+      {id:'tap', label:'Tap on the screen', mode:'tap'},
+      {id:'closer', label:'Lean close to listen', mode:'listen'},
+      {id:'nod', label:'Give an encouraging nod', mode:'nod'},
+      {id:'smile', label:'Pause and smile', mode:'smile'},
+      {id:'welcome', label:'Welcome the learner', mode:'wave', speech:'Welcome back. We can take this one step at a time.'},
+      {id:'name', label:'Introduce herself', mode:'offer', speech:"I'm Ari'el, your VR Quest guide."},
+      {id:'question', label:'Ask whether to continue', mode:'listen', speech:'Ready for the next part?'},
+      {id:'quiet-hi', label:'Soft greeting', mode:'smile', speech:'Hi. I am right here.'},
+      {id:'wake', label:'Wake and greet', mode:'wake', speech:'Oh—hello.'},
+      {id:'listen', label:'Pause as though listening', mode:'listen'},
+      {id:'return-home', label:'Return to her resting corner', mode:'home'}
+    ],
+    [
+      {id:'tip-click', label:'Give a click tip', mode:'point', speech:'You can click any highlighted area to open its lesson.'},
+      {id:'tip-hover', label:'Give a hover tip', mode:'point', speech:'Hover over a region to identify it before you choose it.'},
+      {id:'tip-audio', label:'Explain narration', mode:'point', speech:'The speaker button turns automatic narration on or off.'},
+      {id:'tip-menu', label:'Introduce the main menu', mode:'point', speech:'The main menu organizes the major areas of VR Quest.'},
+      {id:'tip-terrain', label:'Introduce terrain tools', mode:'point', speech:'Terrain tools help shape, paint, and dress the world.'},
+      {id:'tip-entities', label:'Introduce entities', mode:'point', speech:'The Entities panel keeps track of what is inside the scene.'},
+      {id:'tip-view', label:'Introduce the viewport', mode:'point', speech:'The viewport is where you build and inspect the world.'},
+      {id:'hint', label:'Offer a hint', mode:'think', speech:'Would you like a hint?'},
+      {id:'explain', label:'Offer an explanation', mode:'offer', speech:'I can explain any control you select.'},
+      {id:'quiz', label:'Suggest a quick check', mode:'think', speech:'Want to try a quick check before moving on?'},
+      {id:'step', label:'Encourage one step at a time', mode:'nod', speech:'One clear step at a time is enough.'},
+      {id:'success', label:'Celebrate a completed step', mode:'celebrate', speech:'Nicely done.'},
+      {id:'repeat', label:'Offer to repeat', mode:'offer', speech:'Click me if you would like me to say that again.'},
+      {id:'focus', label:'Direct attention gently', mode:'point', speech:'Look for the highlighted edge. That is the active area.'},
+      {id:'lesson-ready', label:'Announce lesson readiness', mode:'offer', speech:'This lesson is ready when you are.'}
+    ],
+    [
+      {id:'rest', label:'Land and rest', mode:'rest'},
+      {id:'stretch', label:'Stretch after resting', mode:'stretch'},
+      {id:'yawn', label:'Yawn quietly', mode:'yawn'},
+      {id:'think', label:'Think visibly', mode:'think'},
+      {id:'glasses', label:'Adjust her glasses', mode:'glasses'},
+      {id:'tail-check', label:'Glance back at her tail', mode:'tailLook'},
+      {id:'sparkle', label:'Make a small sparkle flourish', mode:'sparkle'},
+      {id:'proud', label:'Proud little pose', mode:'proud'},
+      {id:'curious', label:'Curious head tilt', mode:'curious'},
+      {id:'sleepy', label:'Sleepy blink', mode:'sleepy'},
+      {id:'muted', label:'Silent knowing nod', mode:'nod'},
+      {id:'tiny-dance', label:'Tiny floating dance', mode:'dance'},
+      {id:'inspect', label:'Inspect an imaginary object', mode:'inspect'},
+      {id:'settle', label:'Settle into a calm hover', mode:'hover'},
+      {id:'good-job', label:'Warm encouragement', mode:'smile', speech:'You are doing just fine.'}
+    ]
+  ];
+
+  const interactions = interactionPools.flatMap((pool, poolIndex) =>
+    pool.map((item, indexWithinPool) => ({
+      ...item,
+      poolIndex,
+      indexWithinPool,
+      step: poolIndex * 15 + indexWithinPool + 1
+    }))
+  );
+
+  let demoPointer = 0;
+  let demoLoop = 1;
+  let completedSteps = new Set();
+
+  const tailSegments = [
+    { x: 26, y: 34, r: 7, len: 11, color: '#9b63e4', px: 26, py: 34 },
+    { x: 36, y: 39, r: 6, len: 10, color: '#b275ee', px: 36, py: 39 },
+    { x: 44, y: 47, r: 5, len: 9, color: '#ca86f5', px: 44, py: 47 },
+    { x: 50, y: 57, r: 10, len: 13, color: '#df9af8', px: 50, py: 57 }
+  ];
+
+  function buildBoard() {
+    boardEl.innerHTML = '';
+    interactionPools.forEach((pool, poolIndex) => {
+      const section = document.createElement('section');
+      section.className = 'pool';
+      section.id = `pool-${poolIndex}`;
+      const title = document.createElement('h3');
+      title.innerHTML = `${poolIndex + 1}. ${poolNames[poolIndex]}<span>15 interactions</span>`;
+      section.appendChild(title);
+      const list = document.createElement('ol');
+      pool.forEach((item) => {
+        const li = document.createElement('li');
+        const step = poolIndex * 15 + item.indexWithinPool + 1;
+        li.id = `item-${step}`;
+        li.textContent = item.label;
+        list.appendChild(li);
+      });
+      section.appendChild(list);
+      boardEl.appendChild(section);
+    });
+  }
+
+  function updateHud() {
+    if (activeInteraction) {
+      counterEl.textContent = `${activeInteraction.step} / ${interactions.length} · loop ${demoLoop}`;
+      poolNameEl.textContent = poolNames[activeInteraction.poolIndex];
+      currentLabelEl.textContent = activeInteraction.label;
+    } else {
+      counterEl.textContent = `${Math.min(demoPointer, interactions.length)} / ${interactions.length} · loop ${demoLoop}`;
+      poolNameEl.textContent = paused ? 'Demo paused' : 'Pause between interactions';
+      currentLabelEl.textContent = paused ? 'Paused. Ari’el is hovering.' : 'Ari’el is resting briefly before the next action.';
+    }
+    speechLabelEl.textContent = activeSpokenText || 'Speech: gesture only.';
+
+    document.querySelectorAll('.pool').forEach((el, idx) => {
+      el.classList.toggle('active', !!activeInteraction && activeInteraction.poolIndex === idx);
+    });
+
+    for (let i = 1; i <= interactions.length; i++) {
+      const el = document.getElementById(`item-${i}`);
+      if (!el) continue;
+      el.classList.toggle('done', completedSteps.has(i));
+      el.classList.toggle('active', !!activeInteraction && activeInteraction.step === i);
+    }
+  }
+
+  function chooseVoice() {
+    const voices = speechSynthesis.getVoices();
+    const preferred = ['Microsoft Aria', 'Microsoft Jenny', 'Microsoft Zira', 'Samantha', 'Google US English', 'Karen', 'Moira'];
+    voice = voices.find(v => preferred.some(name => v.name.includes(name)))
+      || voices.find(v => /female/i.test(v.name) && /^en/i.test(v.lang))
+      || voices.find(v => /^en-US/i.test(v.lang))
+      || voices.find(v => /^en/i.test(v.lang))
+      || voices[0]
+      || null;
+  }
+  chooseVoice();
+  if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = chooseVoice;
+
+  function wordToMouthCue(word) {
+    const clean = String(word || '').toLowerCase().replace(/[^a-z']/g, '');
+    if (!clean) return 'closed';
+    if (/^(m|b|p|f|v|w)/.test(clean)) return 'narrow';
+    if (/^(o|oh|oo|u)/.test(clean)) return 'round';
+    if (/^(ee|i|y|e)/.test(clean)) return 'wide';
+    if (/^(a|h|r|l)/.test(clean)) return 'open';
+    if (/[ou]/.test(clean)) return 'round';
+    if (/[ae]/.test(clean)) return 'open';
+    if (/[iy]/.test(clean)) return 'wide';
+    return 'narrow';
+  }
+
+  function setMouthForWord(word, duration = 210) {
+    mouthCue = wordToMouthCue(word);
+    mouthCueUntil = performance.now() + duration;
+    speechBeat = performance.now();
+    const clean = String(word || '').toLowerCase().replace(/[^a-z']/g, '');
+    const emphasis = Math.min(1, Math.max(0.35, clean.length / 6));
+    speechAccentFlip *= -1;
+    speechEmphasisX += 0.028 * speechAccentFlip * emphasis;
+    speechEmphasisY += (/[!?]/.test(word || '') ? -0.05 : 0.038) * emphasis;
+  }
+
+  function startFallbackLipSync(text, utterance) {
+    if (fallbackLipTimer) clearInterval(fallbackLipTimer);
+    const words = text.match(/[A-Za-z']+|[.,!?]/g) || [];
+    let index = 0;
+    fallbackLipTimer = setInterval(() => {
+      if (!speaking || activeUtterance !== utterance) {
+        clearInterval(fallbackLipTimer);
+        fallbackLipTimer = null;
+        return;
+      }
+      const token = words[index % words.length];
+      if (/[.,!?]/.test(token)) {
+        mouthCue = 'closed';
+        mouthCueUntil = performance.now() + 100;
+      } else {
+        setMouthForWord(token, 150 + Math.min(150, token.length * 16));
+      }
+      index++;
+    }, 190);
+  }
+
+  function speakText(text) {
+    if (!('speechSynthesis' in window) || !text) return;
+    try { speechSynthesis.cancel(); } catch (e) {}
+    if (fallbackLipTimer) {
+      clearInterval(fallbackLipTimer);
+      fallbackLipTimer = null;
+    }
+
+    activeSpokenText = `Speech: “${text}”`;
+    updateHud();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.92;
+    utterance.pitch = 1.08;
+    utterance.lang = 'en-US';
+    if (voice) utterance.voice = voice;
+
+    let boundaryCount = 0;
+    utterance.onstart = () => {
+      activeUtterance = utterance;
+      speaking = true;
+      speechBeat = performance.now();
+      setMouthForWord((text.match(/[A-Za-z']+/) || ['hello'])[0], 260);
+      setTimeout(() => {
+        if (activeUtterance === utterance && boundaryCount === 0) {
+          startFallbackLipSync(text, utterance);
+        }
+      }, 360);
+    };
+
+    utterance.onboundary = (event) => {
+      boundaryCount++;
+      if (fallbackLipTimer) {
+        clearInterval(fallbackLipTimer);
+        fallbackLipTimer = null;
+      }
+      const tail = text.slice(event.charIndex || 0);
+      const match = tail.match(/^[^A-Za-z']*([A-Za-z']+)/);
+      const word = match ? match[1] : '';
+      const nextGap = typeof event.charLength === 'number' && event.charLength > 0
+        ? Math.max(130, event.charLength * 38)
+        : 210;
+      setMouthForWord(word, nextGap);
+    };
+
+    const finish = () => {
+      if (fallbackLipTimer) {
+        clearInterval(fallbackLipTimer);
+        fallbackLipTimer = null;
+      }
+      if (activeUtterance === utterance) {
+        activeUtterance = null;
+        speaking = false;
+        mouthCue = 'closed';
+        mouthCueUntil = performance.now();
+      }
+    };
+    utterance.onend = finish;
+    utterance.onerror = finish;
+    speechSynthesis.speak(utterance);
+    hasSpokenGreeting = true;
+  }
+
+  function speakHello() {
+    speakText(HELLO_STATEMENT);
+  }
+
+  function queueGreeting() {
+    if (greetingQueued) return;
+    greetingQueued = true;
+    setTimeout(() => {
+      speakHello();
+      nextAutoInteraction = performance.now() + 2200;
+      greetingQueued = false;
+    }, 700);
+  }
+
+
+  const EMBED_AUTO_SPEECH = new Set(['hello','help','question','quiet-hi','wake','welcome','good-job','success']);
+
+  function shouldAutoSpeak(item) {
+    if (!item || !item.speech) return false;
+    if (!EMBED_MODE) return true;
+    if (!EMBED_AUTO_SPEECH.has(item.id)) return false;
+    return Math.random() < 0.33;
+  }
+
+  function chooseNextInteraction() {
+    if (demoPointer >= interactions.length) {
+      demoPointer = 0;
+      demoLoop += 1;
+      completedSteps.clear();
+    }
+    const item = interactions[demoPointer];
+    demoPointer += 1;
+    return item;
+  }
+
+  function beginInteraction(item, now) {
+    activeInteraction = item;
+    completedSteps.add(item.step);
+    gesture = item.mode || 'rest';
+    const willAutoSpeak = shouldAutoSpeak(item);
+    interactionUntil = now + ACTION_DURATION_MS + (willAutoSpeak ? SPOKEN_ACTION_EXTRA_MS : 0);
+    scaleIntent = 0;
+    eyeLookX = 0;
+    eyeLookY = 0;
+    targetOverride = null;
+    activeSpokenText = willAutoSpeak ? `Speech: “${item.speech}”` : 'Speech: gesture only.';
+
+    const mode = item.mode;
+    if (mode === 'approachScan' || mode === 'near') {
+      targetOverride = { x: W * .5, y: H * .54 };
+      scaleIntent = mode === 'approachScan' ? .58 : .28;
+    } else if (mode === 'high') {
+      targetOverride = { x: W * (.35 + Math.random() * .3), y: H * .14 };
+    } else if (mode === 'low') {
+      targetOverride = { x: W * (.3 + Math.random() * .4), y: H * .78 };
+    } else if (mode === 'peekLeft') {
+      targetOverride = { x: 48, y: H * .42 };
+      eyeLookX = 4;
+    } else if (mode === 'peekRight') {
+      targetOverride = { x: W - 48, y: H * .42 };
+      eyeLookX = -4;
+    } else if (mode === 'cross') {
+      targetOverride = { x: pos.x < W / 2 ? W * .82 : W * .18, y: H * (.24 + Math.random() * .46) };
+    } else if (mode === 'home') {
+      targetOverride = { x: W * .18, y: H * .22 };
+    } else if (mode === 'cursorFollow' && cursorPos.active) {
+      targetOverride = { x: cursorPos.x, y: cursorPos.y };
+    } else if (mode === 'cursorDodge' && cursorPos.active) {
+      const awayX = pos.x + (pos.x - cursorPos.x) * .8;
+      const awayY = pos.y + (pos.y - cursorPos.y) * .8;
+      targetOverride = { x: Math.max(80, Math.min(W - 80, awayX)), y: Math.max(90, Math.min(H - 90, awayY)) };
+    } else if (mode === 'point') {
+      targetOverride = { x: W * .68, y: H * .34 };
+      eyeLookX = 5;
+    } else if (mode === 'listen') {
+      targetOverride = { x: W * .5, y: H * .38 };
+      scaleIntent = .16;
+    } else if (mode === 'wake') {
+      scaleIntent = .14;
+    }
+
+    if (willAutoSpeak) speakText(item.speech);
+    updateHud();
+    nextAutoInteraction = interactionUntil + BETWEEN_ACTION_PAUSE_MS;
+  }
+
+  function updateInteraction(now) {
+    if (activeInteraction && now >= interactionUntil) {
+      activeInteraction = null;
+      gesture = 'rest';
+      targetOverride = null;
+      scaleIntent = 0;
+      eyeLookX = 0;
+      eyeLookY = 0;
+      updateHud();
+    }
+    if (!paused && movementFreedom > .04 && !activeInteraction && !speaking && now >= nextAutoInteraction) {
+      beginInteraction(chooseNextInteraction(), now);
+    }
+
+    if (!activeInteraction) return;
+    const mode = activeInteraction.mode;
+    if (mode === 'scan' || mode === 'approachScan') {
+      eyeLookX = Math.sin(now * .0019) * 3.2;
+      eyeLookY = Math.sin(now * .0013) * 1.2;
+    } else if (mode === 'tailLook') {
+      eyeLookX = 5;
+      eyeLookY = 2;
+    } else if (mode === 'curious') {
+      eyeLookX = Math.sin(now * .0014) * 1.8;
+      eyeLookY = -0.6;
+    } else if (mode === 'loop' || mode === 'spiral' || mode === 'dance') {
+      const centerX = W * .5;
+      const centerY = H * .43;
+      const radius = mode === 'spiral' ? 120 + Math.sin(now * .0014) * 35 : 112;
+      targetOverride = {
+        x: centerX + Math.cos(now * .0018) * radius,
+        y: centerY + Math.sin(now * .0018) * (mode === 'dance' ? 52 : 82)
+      };
+      if (mode === 'spiral') scaleIntent = .12 + Math.sin(now * .002) * .08;
+      if (mode === 'dance') scaleIntent = Math.sin(now * .004) * .05;
+    } else if (mode === 'hover' || mode === 'rest' || mode === 'settle') {
+      targetOverride = { x: W * .5 + Math.sin(now * .0015) * 28, y: H * .42 + Math.sin(now * .0023) * 18 };
+    } else if (mode === 'cursorFollow' && cursorPos.active) {
+      targetOverride = { x: cursorPos.x, y: cursorPos.y };
+    }
+  }
+
+  function pickTarget(now) {
+    if (movementFreedom <= .04 || dragging) return;
+    const motionTarget = targetOverride || target;
+    const dx = motionTarget.x - pos.x;
+    const dy = motionTarget.y - pos.y;
+    const dist = Math.hypot(dx, dy);
+    if (now - lastSwitch < 2600 || dist > 40) return;
+    lastSwitch = now;
+    targetIndex = (targetIndex + 1) % path.length;
+    target = { x: path[targetIndex][0] * W, y: path[targetIndex][1] * H };
+  }
+
+  function updateMotion(dt, now) {
+    pickTarget(now);
+
+    const dtFactor = dt / 16.666;
+    if (dragging) {
+      vel.x *= .72; vel.y *= .72;
+      manualAnchor.x = pos.x; manualAnchor.y = pos.y;
+    }
+    let motionTarget = targetOverride || target;
+    if (reactiveFocus && now < reactiveFocusUntil && reactivity > .05) motionTarget = reactiveFocus;
+    if (movementFreedom <= .04) motionTarget = manualAnchor;
+    else if (!targetOverride && (!reactiveFocus || now >= reactiveFocusUntil)) {
+      motionTarget = {
+        x: manualAnchor.x + (target.x-manualAnchor.x)*movementFreedom,
+        y: manualAnchor.y + (target.y-manualAnchor.y)*movementFreedom
+      };
+    }
+    const dx = motionTarget.x - pos.x;
+    const dy = motionTarget.y - pos.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const speedScale = .15 + movementFreedom*.85;
+    const desireX = (dx / dist) * Math.min(2.1, 0.26 + dist * 0.0075) * speedScale;
+    const desireY = (dy / dist) * Math.min(1.8, 0.24 + dist * 0.0068) * speedScale;
+
+    vel.x += (desireX - vel.x) * (0.035 + reactivity*.035) * dtFactor;
+    vel.y += (desireY - vel.y) * (0.035 + reactivity*.035) * dtFactor;
+    vel.x *= Math.pow(0.986, dtFactor);
+    vel.y *= Math.pow(0.986, dtFactor);
+
+    pos.x += vel.x * dtFactor * 3.4;
+    pos.y += vel.y * dtFactor * 3.2;
+
+    bobPhase += dt * 0.004;
+    lean += ((vel.x * 0.10) + Math.sin(bobPhase * 0.8) * 0.02 - lean) * 0.08 * dtFactor;
+
+    const depthPulse = Math.sin(now * 0.0018 + pos.x * 0.005) * 0.055;
+    const heightScale = (0.5 - pos.y / Math.max(1, H)) * -0.09;
+    const scaleTarget = (baseScale + depthPulse + heightScale + scaleIntent) * userSize;
+    currentScale += (scaleTarget - currentScale) * 0.07 * dtFactor;
+  }
+
+  function updateTail(now) {
+    const anchor = { x: 18 - vel.x * 2.2, y: 31 - vel.y * 1.2 };
+    let prevX = anchor.x;
+    let prevY = anchor.y;
+
+    for (let i = 0; i < tailSegments.length; i++) {
+      const seg = tailSegments[i];
+      const lag = 0.10 - i * 0.01;
+      const damping = 0.91 + i * 0.01;
+      const targetX = prevX - vel.x * (1.0 + i * 0.72);
+      const targetY = prevY - vel.y * (0.7 + i * 0.5);
+
+      seg.px += (targetX - seg.px) * lag;
+      seg.py += (targetY - seg.py) * lag;
+
+      const vx = (seg.x - seg.px) * damping;
+      const vy = (seg.y - seg.py) * damping;
+      seg.px = seg.x;
+      seg.py = seg.y;
+      seg.x += vx;
+      seg.y += vy;
+
+      const floatAmount = (0.16 + i * 0.12);
+      seg.y += Math.sin(now * 0.0018 - i * 0.7) * floatAmount;
+      seg.x += Math.sin(now * 0.0012 - i * 0.5) * floatAmount * 0.28;
+
+      const dx = seg.x - prevX;
+      const dy = seg.y - prevY;
+      const ropeLen = seg.len;
+      const dist = Math.hypot(dx, dy) || 0.001;
+      seg.x = prevX + (dx / dist) * ropeLen;
+      seg.y = prevY + (dy / dist) * ropeLen;
+
+      prevX = seg.x;
+      prevY = seg.y;
+    }
+  }
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function updateHeadActing(dt, now) {
+    const dtFactor = dt / 16.666;
+    gazeX += (eyeLookX - gazeX) * 0.10 * dtFactor;
+    gazeY += (eyeLookY - gazeY) * 0.10 * dtFactor;
+
+    speechEmphasisX *= Math.pow(0.86, dtFactor);
+    speechEmphasisY *= Math.pow(0.84, dtFactor);
+
+    let desiredX = gazeX / 10.5;
+    let desiredY = gazeY / 12.0;
+
+    if (gesture === 'curious') desiredX += 0.14;
+    if (gesture === 'tailLook') desiredX += 0.20;
+    if (gesture === 'point') desiredX += 0.10;
+    if (gesture === 'listen') desiredY += 0.07;
+    if (gesture === 'nod') desiredY += Math.sin(now * 0.009) * 0.16;
+    if (gesture === 'yawn') desiredY -= 0.16;
+    if (gesture === 'wake') desiredY -= 0.08;
+
+    desiredX += speechEmphasisX;
+    desiredY += speechEmphasisY;
+
+    desiredX = clamp(desiredX, -0.62, 0.62);
+    desiredY = clamp(desiredY, -0.42, 0.42);
+
+    const shiftX = desiredX - lastHeadIntentX;
+    const shiftY = desiredY - lastHeadIntentY;
+    if (Math.abs(shiftX) > 0.14) headVX += -Math.sign(shiftX) * Math.min(0.05, Math.abs(shiftX) * 0.14);
+    if (Math.abs(shiftY) > 0.12) headVY += -Math.sign(shiftY) * Math.min(0.04, Math.abs(shiftY) * 0.12);
+    lastHeadIntentX = desiredX;
+    lastHeadIntentY = desiredY;
+
+    headVX += (desiredX - headPoseX) * 0.10 * dtFactor;
+    headVY += (desiredY - headPoseY) * 0.11 * dtFactor;
+    headVX *= Math.pow(0.86, dtFactor);
+    headVY *= Math.pow(0.87, dtFactor);
+    headPoseX += headVX * dtFactor;
+    headPoseY += headVY * dtFactor;
+    headPoseX = clamp(headPoseX, -0.68, 0.68);
+    headPoseY = clamp(headPoseY, -0.48, 0.48);
+  }
+
+  function circle(x, y, r, fill, stroke = null, sw = 1) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    if (stroke) {
+      ctx.lineWidth = sw;
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
+    }
+  }
+
+  function crystal(x, y, s, rot = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    const g = ctx.createLinearGradient(0, -s, 0, s);
+    g.addColorStop(0, '#f2d5ff');
+    g.addColorStop(.45, '#9c5bff');
+    g.addColorStop(1, '#4b1b87');
+    ctx.fillStyle = g;
+    ctx.strokeStyle = 'rgba(255,255,255,.55)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.lineTo(s * .58, -s * .12);
+    ctx.lineTo(s * .34, s);
+    ctx.lineTo(-s * .34, s);
+    ctx.lineTo(-s * .58, -s * .12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function horn(x, y, s, rot) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    const g = ctx.createLinearGradient(0, -s, 0, s);
+    g.addColorStop(0, '#edd8c7');
+    g.addColorStop(1, '#9f7a6b');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.quadraticCurveTo(s * .9, -s * .2, s * .45, s);
+    ctx.quadraticCurveTo(-s * .35, s * .4, 0, -s);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawWing(x, y, side, now) {
+    const wingSpeed = Math.min(1, Math.hypot(vel.x, vel.y) / 1.15);
+    const flutter = Math.sin(now * 0.05) * (0.42 + wingSpeed * 0.42);
+    const spread = 0.24 + wingSpeed * 0.28;
+    const trails = 6;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(side, 1);
+    for (let i = 0; i < trails; i++) {
+      const p = i / (trails - 1);
+      const angle = flutter + (p - 0.5) * spread;
+      const alpha = 0.06 + p * 0.07;
+      const size = 1 + p * 0.16;
+      ctx.save();
+      ctx.rotate(angle);
+      ctx.globalAlpha = alpha;
+      ctx.filter = 'blur(1.1px)';
+      const g = ctx.createLinearGradient(0, -6, 86, 28);
+      g.addColorStop(0, 'rgba(244,216,255,.95)');
+      g.addColorStop(.55, 'rgba(168,100,246,.52)');
+      g.addColorStop(1, 'rgba(96,40,180,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.quadraticCurveTo(34, -42 * size, 80 * size, -12);
+      ctx.quadraticCurveTo(52, 8, 10, 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.rotate(flutter * 0.82);
+    ctx.globalAlpha = 0.36;
+    const g2 = ctx.createLinearGradient(0, -8, 80, 22);
+    g2.addColorStop(0, 'rgba(250,229,255,.96)');
+    g2.addColorStop(.5, 'rgba(185,118,255,.65)');
+    g2.addColorStop(1, 'rgba(96,40,180,.08)');
+    ctx.fillStyle = g2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(34, -34, 74, -10);
+    ctx.quadraticCurveTo(45, 8, 9, 18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    ctx.filter = 'none';
+    ctx.restore();
+  }
+
+  function drawTailBehind() {
+    for (const seg of tailSegments) {
+      const grad = ctx.createRadialGradient(seg.x - seg.r * .35, seg.y - seg.r * .35, 1, seg.x, seg.y, seg.r * 1.15);
+      grad.addColorStop(0, 'rgba(255,255,255,.92)');
+      grad.addColorStop(.35, seg.color);
+      grad.addColorStop(1, seg.color);
+      circle(seg.x, seg.y, seg.r, grad, 'rgba(255,255,255,.14)', .8);
+    }
+  }
+
+  function drawArm(side, now) {
+    const speed = Math.min(1, Math.hypot(vel.x, vel.y) / 1.6);
+    const breathe = Math.sin(now * 0.004 + side * 0.35) * 0.035;
+    let settle = Math.sin(now * 0.0027 + side) * (0.5 + speed * 0.35);
+    let gestureLift = 0;
+    let gestureReach = 0;
+    if (gesture === 'wave' && side === 1) { gestureLift = -22 + Math.sin(now * .010) * 5; gestureReach = 2; }
+    if (gesture === 'point' && side === 1) { gestureLift = -7; gestureReach = 15; }
+    if (gesture === 'tap' && side === 1) { gestureLift = -10; gestureReach = 12 + Math.abs(Math.sin(now * .014)) * 8; }
+    if (gesture === 'stretch') { gestureLift = -18; gestureReach = 14; }
+    if (gesture === 'think' && side === 1) { gestureLift = -18; gestureReach = -2; }
+    if (gesture === 'glasses') { gestureLift = -22; gestureReach = 2; }
+    settle += gestureLift;
+
+    ctx.save();
+    ctx.translate(side * 11, 18 + settle);
+    ctx.rotate(side * (-0.18 + breathe));
+    const armGrad = ctx.createLinearGradient(0, 0, side * 10, 19);
+    armGrad.addColorStop(0, '#b984e8');
+    armGrad.addColorStop(1, '#7a49bd');
+    ctx.strokeStyle = armGrad;
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.quadraticCurveTo(side * (4 + gestureReach * .25), 8, side * (7 + gestureReach), 17);
+    ctx.stroke();
+
+    ctx.translate(side * (7 + gestureReach), 17);
+    ctx.rotate(side * 0.12);
+    circle(0, 0, 6.5, '#9a63d7', 'rgba(255,255,255,.16)', .8);
+    ctx.strokeStyle = '#e5c8f7';
+    ctx.lineWidth = 1.9;
+    ctx.lineCap = 'round';
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(side * 1.5, i * 2.1);
+      ctx.lineTo(side * 5.7, i * 2.7 + 1.2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawDragon(now) {
+    const bob = Math.sin(bobPhase * 1.7) * 4;
+    const pitch = Math.max(-0.14, Math.min(0.14, vel.y * 0.06));
+    currentHit = { x: pos.x, y: pos.y - 16 * currentScale + bob, r: 82 * currentScale };
+
+    ctx.save();
+    ctx.translate(pos.x, pos.y + bob);
+    let gestureLean = 0;
+    if (gesture === 'curious') gestureLean = .12;
+    if (gesture === 'bank') gestureLean = Math.sin(now * .0022) * .06;
+    if (gesture === 'nod') gestureLean = Math.sin(now * .006) * .024;
+    ctx.rotate(lean + pitch + gestureLean);
+    ctx.scale(currentScale, currentScale);
+
+    drawWing(-14, -8, -1, now);
+    drawWing(14, -8, 1, now);
+
+    ctx.save();
+    ctx.globalAlpha = .24;
+    const aura = ctx.createRadialGradient(0, 6, 4, 0, 6, 88);
+    aura.addColorStop(0, 'rgba(190,105,255,.52)');
+    aura.addColorStop(1, 'rgba(190,105,255,0)');
+    circle(0, 6, 88, aura);
+    ctx.restore();
+
+    drawTailBehind();
+
+    const bodyGrad = ctx.createLinearGradient(-10, -10, 18, 46);
+    bodyGrad.addColorStop(0, '#d7b2f5');
+    bodyGrad.addColorStop(.55, '#9a67dc');
+    bodyGrad.addColorStop(1, '#6e3caf');
+    circle(0, 28, 28, bodyGrad, 'rgba(255,255,255,.28)', 1.2);
+    circle(-16, 47, 12, '#8d5bcc');
+    circle(16, 47, 12, '#8d5bcc');
+    circle(-17, 56, 7, '#c38be9');
+    circle(17, 56, 7, '#c38be9');
+
+    drawArm(-1, now);
+    drawArm(1, now);
+
+    circle(0, 1, 17, '#b783ea');
+    circle(0, -18, 16, '#c69af1');
+
+    const headTurn = clamp(headPoseX, -0.68, 0.68);
+    const headTilt = clamp(headPoseY, -0.48, 0.48);
+    const headShiftX = headTurn * 1.6;
+    const headShiftY = headTilt * 4.0;
+    const faceCenterX = headTurn * 7.0;
+    const faceCenterY = headTilt * 4.6;
+    const headWidthScale = 1.0 - Math.abs(headTurn) * 0.045 + Math.max(0, -headTilt) * 0.02;
+    const headHeightScale = 1.0 + Math.abs(headTurn) * 0.025 + Math.abs(headTilt) * 0.018;
+    const headSkew = headTurn * 0.045;
+    const eyeSpread = 14 * (1 - Math.abs(headTurn) * 0.16);
+    const leftNear = 0.97 - headTurn * 0.16;
+    const rightNear = 0.97 + headTurn * 0.16;
+
+    ctx.save();
+    ctx.translate(headShiftX, -46 + headShiftY);
+    ctx.transform(1, headTilt * 0.03, headSkew, 1, 0, 0);
+    ctx.scale(headWidthScale, headHeightScale);
+
+    const headGrad = ctx.createRadialGradient(-18 - headTurn * 4, -14 - headTilt * 2, 4, 0, 0, 44);
+    headGrad.addColorStop(0, '#f7e5ff');
+    headGrad.addColorStop(.42, '#c693f0');
+    headGrad.addColorStop(1, '#7544b1');
+    circle(0, 0, 37.5, headGrad, 'rgba(255,255,255,.38)', 1.5);
+
+    horn(-23 - headTurn * 2.2, -33 + headTilt * 1.8, 18 * (headTurn < 0 ? 1.04 : 0.96), -.52 - headTurn * 0.14);
+    horn(23 - headTurn * 2.2, -33 + headTilt * 1.8, 18 * (headTurn > 0 ? 1.04 : 0.96), .52 - headTurn * 0.14);
+    crystal(0 + faceCenterX * 0.12, -38 + faceCenterY * 0.25, 16, 0);
+    crystal(-12 + faceCenterX * 0.22, -31 + faceCenterY * 0.18, 10, -.18);
+    crystal(13 + faceCenterX * 0.22, -30 + faceCenterY * 0.18, 9, .2);
+    crystal(-30 + faceCenterX * 0.38, -8 + faceCenterY * 0.35, 8, -.8);
+    crystal(30 + faceCenterX * 0.38, -8 + faceCenterY * 0.35, 8, .8);
+
+    const glassesY = -2 + faceCenterY * 0.36;
+    const leftEyeX = faceCenterX - eyeSpread;
+    const rightEyeX = faceCenterX + eyeSpread;
+    const leftEyeY = -1 + faceCenterY * 0.38 + gazeY * 0.10;
+    const rightEyeY = -1 + faceCenterY * 0.38 + gazeY * 0.10;
+    const leftGlassW = 13 * leftNear;
+    const rightGlassW = 13 * rightNear;
+    const leftEyeW = 8.5 * leftNear;
+    const rightEyeW = 8.5 * rightNear;
+
+    ctx.strokeStyle = '#d7b06a';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.ellipse(leftEyeX, glassesY, leftGlassW, 12.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(rightEyeX, glassesY, rightGlassW, 12.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(leftEyeX + leftGlassW * 0.92, glassesY); ctx.lineTo(rightEyeX - rightGlassW * 0.92, glassesY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(leftEyeX - leftGlassW * 1.02, glassesY - 1); ctx.lineTo(leftEyeX - leftGlassW * 1.45, glassesY - 5); ctx.moveTo(rightEyeX + rightGlassW * 1.02, glassesY - 1); ctx.lineTo(rightEyeX + rightGlassW * 1.45, glassesY - 5); ctx.stroke();
+
+    const eyeH = blink > 0 ? 2 : 18;
+    ctx.fillStyle = '#201038';
+    ctx.beginPath(); ctx.ellipse(leftEyeX + gazeX * 0.10, leftEyeY, leftEyeW, eyeH / 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(rightEyeX + gazeX * 0.10, rightEyeY, rightEyeW, eyeH / 2, 0, 0, Math.PI * 2); ctx.fill();
+    if (blink <= 0) {
+      circle(leftEyeX - leftEyeW * 0.28, leftEyeY - 4, 2.5 * leftNear, 'rgba(255,255,255,.95)');
+      circle(rightEyeX - rightEyeW * 0.28, rightEyeY - 4, 2.5 * rightNear, 'rgba(255,255,255,.95)');
+      circle(leftEyeX + leftEyeW * 0.2, leftEyeY + 2.3, 1.3, 'rgba(180,120,255,.9)');
+      circle(rightEyeX + rightEyeW * 0.2, rightEyeY + 2.3, 1.3, 'rgba(180,120,255,.9)');
+    }
+
+    const snoutX = faceCenterX * 0.56;
+    const snoutY = 13 + faceCenterY * 0.86;
+    circle(snoutX, snoutY, 12, 'rgba(223,188,245,.96)');
+    circle(snoutX - 4, snoutY - 3, 1.2, '#69408d');
+    circle(snoutX + 4, snoutY - 3, 1.2, '#69408d');
+    if (speaking && performance.now() > mouthCueUntil) mouthCue = 'closed';
+
+    const cueTargets = {
+      closed: { open: 0.03, width: 6.7, round: 0.2 },
+      narrow: { open: 0.32, width: 5.2, round: 0.5 },
+      wide:   { open: 0.42, width: 8.0, round: 0.1 },
+      open:   { open: 0.82, width: 6.8, round: 0.6 },
+      round:  { open: 0.68, width: 4.6, round: 1.0 }
+    };
+    const cue = cueTargets[mouthCue] || cueTargets.closed;
+    mouthOpen += (cue.open - mouthOpen) * 0.34;
+
+    const mouthX = snoutX;
+    const mouthY = 18.4 + faceCenterY * 0.95;
+    if (mouthOpen > 0.08) {
+      ctx.fillStyle = '#3d163f';
+      ctx.beginPath();
+      ctx.ellipse(mouthX, mouthY + mouthOpen * 1.4, cue.width, 1.4 + mouthOpen * (4.8 + cue.round * 1.8), 0, 0, Math.PI * 2);
+      ctx.fill();
+      if (mouthOpen > 0.28) {
+        ctx.fillStyle = 'rgba(238,135,205,.82)';
+        ctx.beginPath();
+        ctx.ellipse(mouthX, mouthY + 2.1 + mouthOpen * 1.8, cue.width * .52, .7 + mouthOpen * 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.strokeStyle = '#5d2f75';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(mouthX - 7, mouthY - 1.4);
+    ctx.quadraticCurveTo(mouthX, mouthY + mouthOpen * 7.0, mouthX + 7, mouthY - 1.4);
+    ctx.stroke();
+
+    crystal(-28 + faceCenterX * 0.24, 16 + faceCenterY * 0.7, 6, -.8);
+    crystal(28 + faceCenterX * 0.24, 16 + faceCenterY * 0.7, 6, .8);
+    ctx.restore();
+
+    ctx.strokeStyle = '#c9a45f';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, -11, 18, .1, Math.PI - .1);
+    ctx.stroke();
+    crystal(0, 6, 6, 0);
+
+    for (let i = 0; i < 5; i++) {
+      const a = now * .001 + i * 1.3;
+      circle(Math.cos(a) * 52, Math.sin(a * 1.2) * 36 - 25, 1.6, 'rgba(250,232,255,.7)');
+    }
+
+    ctx.restore();
+  }
+
+  function isOverDragon(mx, my) {
+    const dx = mx - currentHit.x;
+    const dy = my - currentHit.y;
+    return Math.hypot(dx, dy) <= currentHit.r;
+  }
+
+  const ensureGreeting = () => {
+    initWindAudio();
+    if (!hasSpokenGreeting || !speaking) speakHello();
+  };
+  addEventListener('pointerdown', ensureGreeting, { once: true });
+  addEventListener('keydown', ensureGreeting, { once: true });
+  addEventListener('pointerdown', initWindAudio, { once: true });
+  addEventListener('keydown', initWindAudio, { once: true });
+
+  canvas.addEventListener('pointermove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const previous = cursorPos;
+    cursorPos = { x: mx, y: my, active: true };
+    lastPointerMove = performance.now();
+    if (dragging) {
+      if(Math.hypot(mx-dragStart.x,my-dragStart.y)>5) dragMoved=true;
+      pos.x = clamp(mx-dragOffset.x, 40, W-40);
+      pos.y = clamp(my-dragOffset.y, 48, H-48);
+      manualAnchor = {x:pos.x,y:pos.y};
+      reactiveFocus = null;
+    } else if (reactivity > .05 && isOverDragon(mx,my)) {
+      eyeLookX = clamp((mx-pos.x)/14,-5,5)*reactivity;
+      eyeLookY = clamp((my-pos.y)/18,-3,3)*reactivity;
+    } else if (reactivity > .35 && Math.hypot(mx-previous.x,my-previous.y)>12 && movementFreedom>.08) {
+      reactiveFocus = {x:clamp(mx + (pos.x<mx?-70:70),70,W-70),y:clamp(my-55,80,H-80)};
+      reactiveFocusUntil = performance.now()+500+reactivity*900;
+    }
+    canvas.style.cursor = dragging ? 'grabbing' : (isOverDragon(mx, my) ? 'grab' : 'default');
+  });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    if (isOverDragon(mx,my)) {
+      dragging = true; dragMoved=false; dragStart={x:mx,y:my}; dragOffset={x:mx-pos.x,y:my-pos.y};
+      canvas.setPointerCapture?.(e.pointerId); e.preventDefault();
+    }
+  });
+  canvas.addEventListener('pointerup', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    const wasDragMove=dragMoved; dragging=false; dragMoved=false; manualAnchor={x:pos.x,y:pos.y};
+    canvas.releasePointerCapture?.(e.pointerId);
+    if (isOverDragon(mx,my) && !wasDragMove) speakHello();
+    else if (!isOverDragon(mx,my) && EMBED_MODE) parent.postMessage({type:'ariel-stage-click',x:mx/Math.max(1,W),y:my/Math.max(1,H)},'*');
+  });
+
+  restartBtn.addEventListener('click', () => {
+    demoPointer = 0;
+    demoLoop = 1;
+    completedSteps.clear();
+    activeInteraction = null;
+    paused = false;
+    gesture = 'rest';
+    targetOverride = null;
+    activeSpokenText = 'Speech will appear here when she talks.';
+    nextAutoInteraction = performance.now() + 1000;
+    pauseBtn.textContent = 'Pause demo';
+    updateHud();
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? 'Resume demo' : 'Pause demo';
+    if (!paused) nextAutoInteraction = performance.now() + 700;
+    updateHud();
+  });
+
+  listBtn.addEventListener('click', () => {
+    const showing = boardEl.classList.toggle('show');
+    listBtn.textContent = showing ? 'Hide 60 list' : 'Show all 60';
+  });
+
+  helloBtn.addEventListener('click', () => {
+    speakHello();
+  });
+
+  function frame(now) {
+    const dt = Math.min(40, now - last);
+    last = now;
+
+    updateInteraction(now);
+    updateMotion(dt, now);
+    updateTail(now);
+    updateHeadActing(dt, now);
+    updateWindAudio(now);
+
+    if (gesture === 'sleepy' || gesture === 'yawn') blink = Math.max(blink, 80);
+    if (blink > 0) blink -= dt;
+    else if (Math.random() < .004) blink = 150;
+
+    ctx.clearRect(0, 0, W, H);
+    if (!EMBED_MODE) {
+      for (let i = 0; i < 28; i++) {
+        const px = (i * 83.1) % W;
+        const py = (i * 47.7) % H;
+        circle(px, py, 1 + (i % 3) * .35, `rgba(190,140,255,${0.08 + (i % 4) * 0.02})`);
+      }
+    }
+
+    drawDragon(now);
+    requestAnimationFrame(frame);
+  }
+
+
+  addEventListener('message', (event) => {
+    const data = event.data || {};
+    if (data.type === 'ariel-audio-unlock') initWindAudio();
+    if (data.type === 'ariel-speak' && data.text) speakText(String(data.text));
+    if (data.type === 'ariel-config') {
+      movementFreedom=clamp(Number(data.movement ?? movementFreedom),0,1);
+      reactivity=clamp(Number(data.reactivity ?? reactivity),0,1);
+      userSize=clamp(Number(data.size ?? userSize),.7,1.35);
+      localStorage.setItem('ariel_movement_embed',movementFreedom); localStorage.setItem('ariel_reactivity_embed',reactivity); localStorage.setItem('ariel_size_embed',userSize);
+      if(movementFreedom<=.04){ activeInteraction=null; targetOverride=null; manualAnchor={x:pos.x,y:pos.y}; vel.x*=.2; vel.y*=.2; }
+    }
+    if (data.type === 'ariel-focus') {
+      const fx=clamp(Number(data.x)*W,70,W-70), fy=clamp(Number(data.y)*H+95,90,H-70);
+      eyeLookX=clamp((fx-pos.x)/80,-4,4)*reactivity; eyeLookY=clamp((fy-pos.y)/100,-2.5,2.5)*reactivity;
+      if(movementFreedom>.05){ reactiveFocus={x:fx,y:fy}; reactiveFocusUntil=performance.now()+700+reactivity*1400; }
+      gesture=reactivity>.55?'point':'curious';
+      setTimeout(()=>{if(!activeInteraction)gesture='rest'},900+reactivity*700);
+    }
+    if (data.type === 'ariel-enabled') {
+      paused = !data.enabled;
+      if (!data.enabled) {
+        try { speechSynthesis.cancel(); } catch (e) {}
+        speaking = false;
+      } else {
+        nextAutoInteraction = performance.now() + (EMBED_MODE ? 5000 : 500);
+      }
+    }
+  });
+
+  buildBoard();
+  updateHud();
+  if (!EMBED_MODE) queueGreeting();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

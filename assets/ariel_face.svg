@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<defs>
+ <radialGradient id="head" cx="35%" cy="28%"><stop offset="0" stop-color="#f7e5ff"/><stop offset=".45" stop-color="#c693f0"/><stop offset="1" stop-color="#7544b1"/></radialGradient>
+ <linearGradient id="crystal" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f2d5ff"/><stop offset=".45" stop-color="#9c5bff"/><stop offset="1" stop-color="#4b1b87"/></linearGradient>
+ <linearGradient id="horn" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#edd8c7"/><stop offset="1" stop-color="#9f7a6b"/></linearGradient>
+</defs>
+<path d="M29 34C15 16 18 9 34 29Z" fill="url(#horn)"/><path d="M99 34c14-18 11-25-5-5Z" fill="url(#horn)"/>
+<circle cx="64" cy="66" r="43" fill="url(#head)" stroke="#ffffff66" stroke-width="2"/>
+<path d="M64 10 76 29 70 43 58 43 52 29Z" fill="url(#crystal)" stroke="#ffffff88"/>
+<path d="M42 23 51 37 46 48 36 47 33 35Z" fill="url(#crystal)" stroke="#ffffff66"/>
+<path d="M88 24 95 38 91 49 81 47 78 35Z" fill="url(#crystal)" stroke="#ffffff66"/>
+<path d="M23 54 34 61 31 73 18 69 16 60Z" fill="url(#crystal)" stroke="#ffffff66"/>
+<path d="M105 54 112 61 110 71 98 73 95 61Z" fill="url(#crystal)" stroke="#ffffff66"/>
+<ellipse cx="46" cy="66" rx="15" ry="14" fill="#ffffff22" stroke="#d7b06a" stroke-width="3"/>
+<ellipse cx="82" cy="66" rx="15" ry="14" fill="#ffffff22" stroke="#d7b06a" stroke-width="3"/>
+<path d="M61 66h6M31 62l-8-4M97 62l8-4" stroke="#d7b06a" stroke-width="3" stroke-linecap="round"/>
+<ellipse cx="46" cy="66" rx="8" ry="10" fill="#201038"/><ellipse cx="82" cy="66" rx="8" ry="10" fill="#201038"/>
+<circle cx="43" cy="62" r="2.6" fill="white"/><circle cx="79" cy="62" r="2.6" fill="white"/><circle cx="49" cy="69" r="1.5" fill="#b478ff"/><circle cx="85" cy="69" r="1.5" fill="#b478ff"/>
+<circle cx="64" cy="86" r="14" fill="#dfbcf1"/><circle cx="59" cy="83" r="1.5" fill="#69408d"/><circle cx="69" cy="83" r="1.5" fill="#69408d"/>
+<path d="M57 92c4 5 10 5 14 0" fill="none" stroke="#5b2a79" stroke-width="3" stroke-linecap="round"/>
+<path d="M33 101 41 115 34 123 24 116 23 106Z" fill="url(#crystal)" stroke="#ffffff66"/><path d="M95 101 104 107 105 117 94 123 87 114Z" fill="url(#crystal)" stroke="#ffffff66"/>
+</svg>

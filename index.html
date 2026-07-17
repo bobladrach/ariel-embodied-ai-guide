@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VR Quest + Ari'el Guided Training</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;font-family:Tahoma,Arial,sans-serif;background:#d7d7d7;color:#122033}
+button{font:inherit}
+.shell{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:10px;padding:10px}
+.editor-wrap{display:grid;place-items:center;min-width:0;min-height:0}
+.stage{position:relative;width:min(100%,1220px);aspect-ratio:1024/537;max-height:calc(100vh - 20px);border:1px solid #757575;background:#bdbdbd;box-shadow:0 10px 30px rgba(0,0,0,.18);overflow:hidden}
+#baseImg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;user-select:none;pointer-events:none}
+#overlay{position:absolute;inset:0;width:100%;height:100%;z-index:8}
+.hit{fill:rgba(255,255,255,0);stroke:rgba(0,0,0,0);stroke-width:1;cursor:pointer;vector-effect:non-scaling-stroke}
+.hit:hover,.hit.active{fill:rgba(116,169,237,.12);stroke:rgba(77,134,217,.75)}
+.menu-underlay{position:absolute;left:0;top:3.05%;width:100%;height:5.5%;z-index:30;background:linear-gradient(180deg,#eee9d8 0%,#e7e2cf 100%);border-top:1px solid rgba(255,255,255,.65);border-bottom:1px solid #b9b39f;pointer-events:none}
+.file-bar{position:absolute;left:1.2%;top:3.05%;height:5.5%;display:flex;align-items:stretch;z-index:32;background:#ececec;border:1px solid #b8b8b8;border-radius:2px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset;overflow:visible}
+.file-menu{position:relative;display:flex;align-items:stretch;flex:0 0 auto}
+.file-menu button{height:100%;border:0;border-right:1px solid #c7c7c7;background:#ececec;color:#111;padding:0 clamp(7px,1vw,13px);font-size:clamp(11px,1.15vw,14px);line-height:1;cursor:pointer;white-space:nowrap}
+.file-menu:last-child button{border-right:0}
+.file-menu button:hover,.file-menu.active button{background:#d9e9fb;box-shadow:inset 0 0 0 1px #7ba5d5}
+.dropdown{position:absolute;display:none;min-width:220px;background:#fff;border:1px solid #777;box-shadow:3px 5px 12px rgba(0,0,0,.28);padding:2px;z-index:36}
+.dropdown.open{display:block}
+.dropdown button{display:block;width:100%;border:0;background:#fff;padding:6px 8px;text-align:left;cursor:pointer;font-size:13px}
+.dropdown button:hover{background:#dcebfd}
+#arielStage{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;z-index:14;pointer-events:auto}
+.guide{min-height:0;border:1px solid #8ea1b7;background:#eef3f9;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.10)}
+.guide-head{background:#b7cade;border-bottom:1px solid #97aabd;padding:10px}
+.guide-head h1{font-size:17px;margin:0 0 4px}
+.guide-head p{margin:0;color:#27405d;font-size:12px;line-height:1.35}
+.ariel-row{position:relative;display:flex;align-items:center;gap:8px;margin-top:9px}
+.toggle{border:1px solid #5a84ac;background:#fff;border-radius:18px;padding:7px 12px;cursor:pointer;font-size:12px;font-weight:700;color:#17324f}
+.toggle.off{background:#e8edf2;color:#5b6f84}
+.gear-btn{width:32px;height:32px;border-radius:50%;border:1px solid #5a84ac;background:#fff;cursor:pointer;font-size:16px;line-height:1;color:#17324f}
+.gear-btn:hover,.toggle:hover{background:#dceaf9}
+.ariel-prefs{position:absolute;right:0;top:40px;width:270px;padding:11px;border:1px solid #98abc0;border-radius:8px;background:#fff;box-shadow:0 10px 22px rgba(0,0,0,.18);display:grid;gap:8px;z-index:40}
+.ariel-prefs[hidden]{display:none}
+.pref-row{display:grid;grid-template-columns:74px 1fr 34px;align-items:center;gap:7px;font-size:11px;color:#27405d}
+.pref-row input{width:100%;accent-color:#4f8fc8}
+.pref-value{text-align:right;font-variant-numeric:tabular-nums;color:#17324f;font-weight:700}
+.pref-hint{font-size:10px;color:#536b84;line-height:1.3}
+.current{padding:10px;background:#fff;border-bottom:1px solid #bcc7d3}
+.eyebrow{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#536b84;font-weight:700}
+.current h2{font-size:16px;margin:4px 0 6px}
+.current p{margin:0;font-size:12px;line-height:1.45;color:#253544}
+.reveal{padding:8px;border-bottom:1px solid #bcc7d3;background:#f8fbff}
+.reveal h3,.training h3{margin:0 0 7px;font-size:12px}
+.reveal-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.reveal-grid button,.training button{border:1px solid #99aac0;background:#fff;border-radius:4px;padding:7px 8px;text-align:left;cursor:pointer;font-size:12px}
+.reveal-grid button:hover,.training button:hover{background:#dceaf9;border-color:#6e96c4}
+.answer{padding:10px;background:#fff;border-bottom:1px solid #bcc7d3;min-height:132px;font-size:12px;line-height:1.5;overflow:auto}
+.answer h3{margin:0 0 6px;font-size:13px}
+.answer p{margin:0}
+.training{padding:8px;overflow:auto;flex:1;min-height:0}
+.training-list{display:grid;gap:5px}
+.training button.active{background:#d2e3f7;border-color:#5d8fc7;font-weight:700}
+@media (max-width: 980px){.shell{grid-template-columns:minmax(0,1fr) 270px;gap:6px;padding:6px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <main class="editor-wrap">
+    <div class="stage" id="stage">
+      <img id="baseImg" src="assets/vrq_1094.jpg" alt="VR Quest editor">
+      <svg id="overlay" viewBox="0 0 1024 537" preserveAspectRatio="none" aria-label="VR Quest interactive overlay">
+        <g id="toolHits"></g>
+      </svg>
+      <div class="menu-underlay" aria-hidden="true"></div>
+      <nav class="file-bar" id="fileBar" aria-label="VR Quest menus"></nav>
+      <div class="dropdown" id="menu-file"></div>
+      <div class="dropdown" id="menu-edit"></div>
+      <div class="dropdown" id="menu-terrain"></div>
+      <div class="dropdown" id="menu-entities"></div>
+      <div class="dropdown" id="menu-test"></div>
+      <div class="dropdown" id="menu-help"></div>
+      <iframe id="arielStage" src="Ariel_Animated_Mascot_v14.html?embed=1" title="Ari'el"></iframe>
+    </div>
+  </main>
+  <aside class="guide">
+    <div class="guide-head">
+      <h1>Ari'el Guide</h1>
+      <p>Select a menu or toolbar control. Ari'el explains what it does, how to use it, and what to try next.</p>
+      <div class="ariel-row">
+        <button class="toggle" id="toggle" type="button">Ari'el Disable</button>
+        <button class="gear-btn" id="gearBtn" type="button" aria-expanded="false" aria-controls="arielPrefsPanel" title="Ari'el settings">⚙</button>
+        <div class="ariel-prefs" id="arielPrefsPanel" aria-label="Ari’el settings" hidden>
+        <label class="pref-row"><span>Movement</span><input id="movementPref" type="range" min="0" max="100" step="1"><span class="pref-value" id="movementValue">65</span></label>
+        <label class="pref-row"><span>Reactivity</span><input id="reactivityPref" type="range" min="0" max="100" step="1"><span class="pref-value" id="reactivityValue">70</span></label>
+        <label class="pref-row"><span>Size</span><input id="sizePref" type="range" min="70" max="135" step="1"><span class="pref-value" id="sizeValue">100</span></label>
+        <div class="pref-hint">At Movement 0, Ari’el stays where you place her. Drag her directly to a new position.</div>
+        </div>
+      </div>
+    </div>
+    <section class="current">
+      <div class="eyebrow">Selected control</div>
+      <h2 id="selectedTitle">Paint Texture</h2>
+      <p id="selectedSummary">Paints the selected material directly onto the terrain with the editor brush.</p>
+    </section>
+    <section class="reveal">
+      <h3>Reveal</h3>
+      <div class="reveal-grid">
+        <button data-reveal="purpose">What it does</button>
+        <button data-reveal="steps">How to use it</button>
+        <button data-reveal="shortcut">Shortcut</button>
+        <button data-reveal="try">Try this</button>
+      </div>
+    </section>
+    <section class="answer" id="answer"><h3>What it does</h3><p>Paint Texture changes the visible ground material without changing the terrain’s shape.</p></section>
+    <section class="training">
+      <h3>Training sections</h3>
+      <div class="training-list" id="trainingList"></div>
+    </section>
+  </aside>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const state = {enabled: localStorage.getItem('ariel_read_enabled') !== 'false', selected: 'texture', reveal: 'purpose', movement:Number(localStorage.getItem('ariel_movement') ?? 65), reactivity:Number(localStorage.getItem('ariel_reactivity') ?? 70), size:Number(localStorage.getItem('ariel_size') ?? 100), settingsOpen:false};
+
+const SCREEN = {
+  default: 'assets/vrq_1094.jpg',
+  file: 'assets/vrq_1094.jpg', edit: 'assets/vrq_1094.jpg', terrain: 'assets/vrq_1094.jpg', entities: 'assets/vrq_1094.jpg', test: 'assets/vrq_1094.jpg', help: 'assets/vrq_1094.jpg',
+  shape: 'assets/vrq_1104.jpg', level: 'assets/vrq_1105.jpg', stored: 'assets/vrq_1106.jpg', blend: 'assets/vrq_1107.jpg', ramp: 'assets/vrq_1108.jpg', texture: 'assets/vrq_1094.jpg', grass: 'assets/vrq_1110.jpg',
+  entity: 'assets/vrq_1111.jpg', markers: 'assets/vrq_1112.jpg', waypoint: 'assets/vrq_1113.jpg', drawpath: 'assets/vrq_1114.jpg', character: 'assets/vrq_1115.jpg', structure: 'assets/vrq_1117.jpg',
+  manual: 'assets/vrq_1091.jpg', 'editor-shortcuts': 'assets/vrq_1091.jpg', 'level-shortcuts': 'assets/vrq_1092.jpg', 'vr-controls': 'assets/vrq_1093.jpg',
+  'new-random': 'assets/vrq_1094.jpg', 'new-flat': 'assets/vrq_1094.jpg', open: 'assets/vrq_1094.jpg', save: 'assets/vrq_1094.jpg', 'save-as': 'assets/vrq_1094.jpg', standalone: 'assets/vrq_1094.jpg', cloud: 'assets/vrq_1094.jpg', exit: 'assets/vrq_1094.jpg',
+  undo: 'assets/vrq_1094.jpg', redo: 'assets/vrq_1094.jpg', 'window-views': 'assets/vrq_1094.jpg', 'color-scheme': 'assets/vrq_1094.jpg', 'reset-layout': 'assets/vrq_1094.jpg',
+  'test-level': 'assets/vrq_1101.jpg', 'test-vr': 'assets/vrq_1101.jpg', 'social-vr': 'assets/vrq_1101.jpg', about: 'assets/vrq_1094.jpg'
+};
+
+const K = {
+  'new-random': {title:'New Random Level', summary:'Creates a new level with automatically generated terrain.', purpose:'Use this when you want a landscape to begin with instead of starting from a flat plane.', steps:'Open File, choose New Random Level, then inspect the generated terrain before placing objects or markers.', shortcut:'No verified keyboard shortcut.', try:'Create a random level and identify one strong place for a player start.'},
+  'new-flat': {title:'New Flat Level', summary:'Creates a clean, flat level.', purpose:'This is the best starting point when the student wants full control over the terrain.', steps:'Open File, choose New Flat Level, save the map, and then switch to a terrain tool.', shortcut:'No verified keyboard shortcut.', try:'Start flat and sculpt one hill and one flat building pad.'},
+  open: {title:'Open Level', summary:'Loads an existing VR Quest map file.', purpose:'Open is used to continue work on a saved map or explore an example.', steps:'Choose Open, select the map file, and wait for the level to load before editing.', shortcut:'Ctrl+O.', try:'Open a sample level and find the Player Start marker.'},
+  save: {title:'Save Level', summary:'Saves the current level.', purpose:'Frequent saving protects the student’s work.', steps:'Use Save after each meaningful change. Use Save As if you want a separate version.', shortcut:'Ctrl+Q in the observed build.', try:'Make one small change and save it immediately.'},
+  'save-as': {title:'Save As', summary:'Saves the level under a new file name.', purpose:'Use this for backups and versioned copies.', steps:'Choose Save As, type the new name, and keep the level format.', shortcut:'No verified keyboard shortcut.', try:'Make a numbered backup before a large change.'},
+  standalone: {title:'Save Standalone', summary:'Builds the level as a standalone application.', purpose:'This is used when the project needs to run outside the normal editor workflow.', steps:'Finish and test the level first, then choose Save Standalone and follow the prompts.', shortcut:'No verified keyboard shortcut.', try:'Before building, confirm the level has a Player Start and all required content.'},
+  cloud: {title:'Save to Level Cloud', summary:'Saves or uploads the level through the cloud workflow.', purpose:'Use this when the level needs to be shared or stored through VR Quest cloud services.', steps:'Save locally first, then choose Save to Level Cloud and complete the upload steps.', shortcut:'No verified keyboard shortcut.', try:'Name the level clearly before uploading it.'},
+  exit: {title:'Exit', summary:'Closes VR Quest.', purpose:'Exit ends the editor session.', steps:'Save the map first, then choose Exit.', shortcut:'No verified keyboard shortcut.', try:'Confirm the last save completed before leaving.'},
+  undo: {title:'Undo', summary:'Reverses the most recent editing action.', purpose:'Undo is useful for quickly correcting a mistake.', steps:'Choose Undo immediately after the unwanted action.', shortcut:'Ctrl+Z.', try:'Move an item, undo the move, and check that it returns.'},
+  redo: {title:'Redo', summary:'Restores an action that was just undone.', purpose:'Redo is useful when the student decides the undone change was correct after all.', steps:'Use Redo directly after Undo, before making another edit.', shortcut:'Ctrl+Y.', try:'Make a change, undo it, then redo it.'},
+  'window-views': {title:'Window Views', summary:'Controls which panes or views are visible.', purpose:'Use this to recover or rearrange the editor layout.', steps:'Open Edit, choose Window Views, and turn the needed pane on or off.', shortcut:'No verified keyboard shortcut.', try:'Hide and restore a pane so the student sees how layout recovery works.'},
+  'color-scheme': {title:'Change Color Scheme', summary:'Changes the visual color theme of the editor.', purpose:'This changes comfort and readability without changing the level itself.', steps:'Open Edit, choose Change Color Scheme, and select the preferred theme.', shortcut:'No verified keyboard shortcut.', try:'Compare themes and decide which one is easiest to read.'},
+  'reset-layout': {title:'Reset Layout', summary:'Returns the editor layout to its default arrangement.', purpose:'This helps recover from hidden or moved panels.', steps:'Open Edit and choose Reset Layout.', shortcut:'No verified keyboard shortcut.', try:'Use it after experimenting with Window Views.'},
+  shape: {title:'Shape Mode', summary:'Raises or lowers terrain with the brush.', purpose:'Shape Mode creates hills, valleys, pits, and major landforms.', steps:'Select Shape Mode. Hold the left mouse button to raise terrain. Hold Shift plus left mouse to lower terrain.', shortcut:'Terrain editing uses the mouse brush; plus and minus change brush size.', try:'Create one hill and one shallow depression.'},
+  level: {title:'Level Mode', summary:'Levels terrain toward a consistent height.', purpose:'Level Mode creates pads, paths, plateaus, and other flat surfaces.', steps:'Select Level Mode and paint across the area you want to make even.', shortcut:'No separate verified shortcut beyond terrain controls.', try:'Create a flat area large enough for a building.'},
+  stored: {title:'Stored Level Mode', summary:'Paints terrain at a previously captured height.', purpose:'Stored Level Mode makes separate areas match the exact same elevation.', steps:'Establish a height with leveling, switch to Stored Level Mode, and paint the second area.', shortcut:'No verified dedicated shortcut.', try:'Make two flat pads at matching height on opposite sides of the map.'},
+  blend: {title:'Blend Mode', summary:'Smooths harsh terrain transitions.', purpose:'Blend Mode softens sharp edges left by shaping, leveling, or ramps.', steps:'Choose Blend Mode and sweep the brush over rough terrain boundaries.', shortcut:'Brush size can be adjusted with plus and minus.', try:'Blend the edge of a hill until it looks natural.'},
+  ramp: {title:'Ramp Mode', summary:'Creates a slope between two terrain heights.', purpose:'Ramps make raised areas reachable and help form roads or paths.', steps:'Select Ramp Mode, begin at one height, and drag toward another height.', shortcut:'No verified dedicated shortcut.', try:'Build a ramp to a raised platform and then smooth it.'},
+  texture: {title:'Paint Texture', summary:'Paints the selected material directly onto the terrain with the editor brush.', purpose:'Paint Texture changes the visible ground material without changing the terrain’s shape.', steps:'Choose Paint Texture, pick a material from the right panel, adjust brush size, and paint the ground.', shortcut:'Left mouse paints; Shift plus left mouse performs the alternate paint action shown by the editor.', try:'Paint a path and then edge it with a second texture.'},
+  grass: {title:'Paint Grass', summary:'Paints vegetation density onto the terrain.', purpose:'Grass painting controls where vegetation appears and how dense it becomes.', steps:'Select Paint Grass and paint the terrain to add vegetation. Use Shift while painting to reduce density.', shortcut:'Left mouse adds vegetation; Shift plus left mouse thins it.', try:'Create a grassy area while leaving a clear walking path.'},
+  entity: {title:'Object Tools', summary:'Enters entity editing for objects, buildings, and placed items.', purpose:'Use Object Tools to place, select, move, rotate, scale, and manage world entities.', steps:'Open the entity library, pick an item, place it, then select it and use the editing widget.', shortcut:'E enters object tools. R rotates. Enter finds the nearest floor or wall.', try:'Place one building and one object, then rotate each.'},
+  markers: {title:'Markers Mode', summary:'Edits functional markers such as starts, zones, lights, and triggers.', purpose:'Markers define gameplay logic and experiences without acting like ordinary objects.', steps:'Choose Markers Mode, open the Markers tab, select the needed marker, and place it in the level.', shortcut:'M enters Markers Mode. Plus and minus change marker range.', try:'Place a Player Start and one Text Zone.'},
+  waypoint: {title:'Waypoint Editing Mode', summary:'Edits points on a waypoint path.', purpose:'Waypoints guide movement paths, often for characters or scripted motion.', steps:'Select a path, drag points to move them, use Shift plus left mouse to clone, and Shift plus right mouse to delete.', shortcut:'P enters waypoint path editing.', try:'Shape a curved route using cloned points.'},
+  drawpath: {title:'Draw Waypoint Path', summary:'Creates a new waypoint path.', purpose:'Use this before editing waypoint points.', steps:'Choose Draw Waypoint Path and place route points in sequence across the terrain.', shortcut:'Path work is connected with the P workflow and waypoint tools.', try:'Draw a short path and then refine it in Waypoint Editing Mode.'},
+  character: {title:'Character Creator', summary:'Builds and saves a customized character.', purpose:'The character creator combines type, appearance, clothing, voice, and other options.', steps:'Enter a name, choose the base type, customize each category, inspect the result, and save the character.', shortcut:'No verified keyboard shortcut.', try:'Create a character that fits the level’s theme.'},
+  structure: {title:'Structure Editor', summary:'Builds reusable structures from parts and textures.', purpose:'The Structure Editor creates custom sites, walls, floors, openings, and larger assembled structures.', steps:'Create a new site, name it, add structural parts, adjust them, select textures, and confirm the structure.', shortcut:'No verified keyboard shortcut.', try:'Build a simple room with a floor, walls, and one doorway.'},
+  'test-level': {title:'Test Level', summary:'Builds and runs the current level on the desktop.', purpose:'Testing reveals scale, movement, collisions, triggers, lighting, and whether the level works as intended.', steps:'Save the level, confirm a Player Start exists, then choose Test Level. Press Esc to return.', shortcut:'Use the Test Level toolbar button or the Test Level menu.', try:'Walk from the Player Start to the main objective and note anything confusing.'},
+  'test-vr': {title:'Test Game in VR', summary:'Runs the current level in a connected VR headset.', purpose:'VR testing checks comfort, scale, interaction, and headset-specific behavior.', steps:'Connect the headset, save the level, and choose Test Game in VR.', shortcut:'Use the Test Level menu or toolbar.', try:'Check whether important objects are easy to see and reach in VR.'},
+  'social-vr': {title:'Social VR', summary:'Hosts or joins a shared multiplayer VR level.', purpose:'Social VR allows multiple users to enter the same level together.', steps:'Prepare multiplayer start markers, save the level, choose Social VR, and follow the host or join workflow.', shortcut:'No verified dedicated shortcut.', try:'Verify there are enough multiplayer starts for the session.'},
+  'editor-shortcuts': {title:'Editor Shortcuts', summary:'Shows keyboard shortcuts for building and editing.', purpose:'This is the fastest shortcut reference for terrain, entities, markers, waypoints, map movement, and testing.', steps:'Open Help and choose Editor Shortcuts.', shortcut:'F1 opens quick key help.', try:'Practice switching between top-down view, entity tools, and waypoint tools.'},
+  'level-shortcuts': {title:'Level Shortcuts', summary:'Shows controls used while playing a level.', purpose:'This covers movement, looking, running, jumping, crouching, use, flashlight, and other play controls.', steps:'Open Help and choose Level Shortcuts before testing.', shortcut:'Typical play controls include WASD, mouse look, Shift run, Space jump, C crouch, E use, and F flashlight.', try:'Run a test and use each basic movement control once.'},
+  'vr-controls': {title:'VR Controls', summary:'Shows headset and controller actions for VR play.', purpose:'This explains looking, movement, rotation, teleporting, selecting, interacting, and exiting in VR.', steps:'Open Help and choose VR Controls, then compare the diagram with the connected controller.', shortcut:'Controller-specific.', try:'Practice teleporting and selecting an object in VR.'},
+  manual: {title:'Read User Manual', summary:'Opens the full VR Quest guide.', purpose:'Use the manual for longer explanations and complete workflows.', steps:'Open Help and choose Read User Manual.', shortcut:'No verified keyboard shortcut.', try:'Use the manual after Ari’el’s quick guidance when you need more depth.'},
+  about: {title:'About', summary:'Shows product and version information.', purpose:'About helps identify the installed VR Quest build when troubleshooting.', steps:'Open Help and choose About.', shortcut:'No verified keyboard shortcut.', try:'Record the version before reporting a problem.'}
+};
+
+const menus = {
+  file: {label:'File', image:'file', x:14, y:18, items:[['new-random','New Random Level'],['new-flat','New Flat Level'],['open','Open'],['save','Save'],['save-as','Save As...'],['standalone','Save Standalone'],['cloud','Save to Level Cloud'],['character','Character Creator'],['structure','Structure Editor'],['exit','Exit']]},
+  edit: {label:'Edit', image:'edit', x:42, y:18, items:[['undo','Undo'],['redo','Redo'],['window-views','Window Views'],['color-scheme','Change Color Scheme'],['reset-layout','Reset Layout']]},
+  terrain: {label:'Terrain', image:'terrain', x:73, y:18, items:[['shape','Shape Mode'],['level','Level Mode'],['stored','Stored Level Mode'],['blend','Blend Mode'],['ramp','Ramp Mode'],['texture','Paint Texture'],['grass','Paint Grass']]},
+  entities: {label:'Entities', image:'entities', x:124, y:18, items:[['entity','Entity Mode'],['markers','Marker Mode'],['waypoint','Waypoint Editing Mode'],['drawpath','Draw Waypoint Path']]},
+  test: {label:'Test Level', image:'test', x:177, y:18, items:[['test-level','Test Level'],['test-vr','Test Game in VR'],['social-vr','Social VR']]},
+  help: {label:'Help', image:'help', x:240, y:18, items:[['editor-shortcuts','Editor Shortcuts'],['level-shortcuts','Level Shortcuts'],['vr-controls','VR Controls'],['manual','Read User Manual'],['about','About']]}
+};
+
+const menuCells = [
+  {id:'file', x:12, y:15, w:43, h:29},
+  {id:'edit', x:55, y:15, w:45, h:29},
+  {id:'terrain', x:100, y:15, w:67, h:29},
+  {id:'entities', x:167, y:15, w:70, h:29},
+  {id:'test', x:237, y:15, w:78, h:29},
+  {id:'help', x:315, y:15, w:50, h:29}
+];
+
+const toolCells = [
+  {id:'undo', label:'Undo', x:0, y:41, w:47, h:50},
+  {id:'redo', label:'Redo', x:47, y:41, w:51, h:50},
+  {id:'shape', label:'Shape Mode', x:98, y:41, w:52, h:50},
+  {id:'level', label:'Level Mode', x:150, y:41, w:48, h:50},
+  {id:'stored', label:'Stored Level Mode', x:198, y:41, w:49, h:50},
+  {id:'blend', label:'Blend Mode', x:247, y:41, w:49, h:50},
+  {id:'ramp', label:'Ramp Mode', x:296, y:41, w:48, h:50},
+  {id:'texture', label:'Paint Texture', x:344, y:41, w:49, h:50},
+  {id:'grass', label:'Paint Grass', x:393, y:41, w:49, h:50},
+  {id:'entity', label:'Object Tools', x:442, y:41, w:48, h:50},
+  {id:'markers', label:'Markers Mode', x:490, y:41, w:48, h:50},
+  {id:'waypoint', label:'Waypoint Editing Mode', x:538, y:41, w:49, h:50},
+  {id:'drawpath', label:'Draw Waypoint Path', x:587, y:41, w:46, h:50},
+  {id:'character', label:'Character Creator', x:633, y:41, w:46, h:50},
+  {id:'structure', label:'Structure Editor', x:679, y:41, w:46, h:50},
+  {id:'test-level', label:'Test Level', x:725, y:41, w:47, h:50},
+  {id:'test-vr', label:'Test Game in VR', x:772, y:41, w:46, h:50}
+];
+
+const training = [
+  ['shape','Terrain creation'], ['texture','Terrain painting'], ['entity','Entities and objects'], ['markers','Markers and zones'], ['waypoint','Waypoints'], ['character','Character Creator'], ['structure','Structure Editor'], ['test-level','Testing'], ['vr-controls','VR controls']
+];
+
+function sendToAriel(type,payload={}){ const f = $('#arielStage'); if (f && f.contentWindow) f.contentWindow.postMessage({type,...payload}, '*'); }
+function speak(text){ if(state.enabled && text) sendToAriel('ariel-speak',{text}); }
+function syncArielPrefs(){
+  $('#movementPref').value=state.movement; $('#movementValue').textContent=state.movement;
+  $('#reactivityPref').value=state.reactivity; $('#reactivityValue').textContent=state.reactivity;
+  $('#sizePref').value=state.size; $('#sizeValue').textContent=state.size;
+  sendToAriel('ariel-config',{movement:state.movement/100,reactivity:state.reactivity/100,size:state.size/100});
+}
+function focusArielOnControl(id){
+  const cell=toolCells.find(t=>t.id===id); if(!cell) return;
+  sendToAriel('ariel-focus',{x:(cell.x+cell.w/2)/1024,y:(cell.y+cell.h/2)/537,kind:'control'});
+}
+function setImage(key){ $('#baseImg').src = SCREEN[key] || SCREEN.default; }
+function closeMenus(){ $$('.dropdown').forEach(d => d.classList.remove('open')); $$('.file-menu').forEach(h => h.classList.remove('active')); }
+function toggleSettings(force){ const panel=$('#arielPrefsPanel'); state.settingsOpen=typeof force==='boolean'?force:!state.settingsOpen; panel.hidden=!state.settingsOpen; $('#gearBtn').setAttribute('aria-expanded',String(state.settingsOpen)); }
+function setEnabled(on){ state.enabled = on; localStorage.setItem('ariel_read_enabled', String(on)); $('#toggle').classList.toggle('off', !on); $('#toggle').textContent = on ? "Ari'el Disable" : "Ari'el Enable"; $('#arielStage').style.display = on ? 'block' : 'none'; sendToAriel('ariel-enabled',{enabled:on}); }
+function renderSelection(id, autoSpeak=true){
+  const k = K[id] || K.texture; state.selected = id; $('#selectedTitle').textContent = k.title; $('#selectedSummary').textContent = k.summary; setImage(id); $$('.hit.tool').forEach(h => h.classList.toggle('active', h.dataset.id === id)); $$('#trainingList button').forEach(b => b.classList.toggle('active', b.dataset.id === id)); reveal('purpose', false); focusArielOnControl(id); if(autoSpeak) speak(k.purpose);
+}
+function reveal(type, autoSpeak=true){
+  state.reveal = type; const k = K[state.selected] || K.texture; const labels = {purpose:'What it does', steps:'How to use it', shortcut:'Shortcut', try:'Try this'}; $('#answer').innerHTML = `<h3>${labels[type]}</h3><p>${k[type]}</p>`; if(autoSpeak) speak(k[type]);
+}
+function openMenu(menuId){
+  closeMenus(); toggleSettings(false); const meta = menus[menuId]; if(!meta) return; setImage(meta.image); const box = $('#menu-'+menuId); box.classList.add('open'); document.querySelector(`.file-menu[data-menu="${menuId}"]`)?.classList.add('active');
+}
+
+function buildFileBar(){
+  const bar = $('#fileBar');
+  bar.innerHTML = Object.entries(menus).map(([id,meta]) =>
+    `<div class="file-menu" data-menu="${id}"><button type="button" aria-haspopup="true" aria-expanded="false">${meta.label}</button></div>`
+  ).join('');
+  $$('.file-menu').forEach(cell => {
+    const btn = cell.querySelector('button');
+    btn.addEventListener('click', e => { e.stopPropagation(); const already=cell.classList.contains('active'); closeMenus(); if(!already) openMenu(cell.dataset.menu); });
+    btn.addEventListener('mouseenter', () => {
+      const rect=cell.getBoundingClientRect(), stageRect=$('#stage').getBoundingClientRect();
+      sendToAriel('ariel-focus',{x:(rect.left+rect.width/2-stageRect.left)/stageRect.width,y:(rect.top+rect.height/2-stageRect.top)/stageRect.height,kind:'menu'});
+    });
+  });
+  positionDropdowns();
+}
+function positionDropdowns(){
+  const stage=$('#stage'); if(!stage) return;
+  Object.keys(menus).forEach(id=>{
+    const cell=document.querySelector(`.file-menu[data-menu="${id}"]`), box=$('#menu-'+id);
+    if(!cell||!box) return;
+    box.style.left=cell.offsetLeft+'px';
+    box.style.top=($('#fileBar').offsetTop+$('#fileBar').offsetHeight)+'px';
+  });
+}
+function buildToolHits(){
+  const g = $('#toolHits');
+  g.innerHTML = toolCells.map(t => `<rect class="hit tool" data-id="${t.id}" x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" rx="2" ry="2"></rect>`).join('');
+  $$('.hit.tool').forEach(r => r.addEventListener('click', e => { e.stopPropagation(); closeMenus(); renderSelection(r.dataset.id, true); }));
+}
+function buildDropdowns(){
+  Object.entries(menus).forEach(([id, meta]) => {
+    const box = $('#menu-' + id);
+    box.innerHTML = meta.items.map(([key,label]) => `<button type="button" data-id="${key}">${label}</button>`).join('');
+    box.addEventListener('click', e => { const btn = e.target.closest('button[data-id]'); if(!btn) return; e.stopPropagation(); closeMenus(); renderSelection(btn.dataset.id, true); });
+  });
+}
+
+$('#trainingList').innerHTML = training.map(([id,label]) => `<button type="button" data-id="${id}">${label}</button>`).join('');
+$('#trainingList').addEventListener('click', e => { const btn = e.target.closest('button[data-id]'); if(btn){ closeMenus(); renderSelection(btn.dataset.id, true); }});
+$$('[data-reveal]').forEach(b => b.addEventListener('click', () => reveal(b.dataset.reveal, true)));
+document.addEventListener('click', e => { if(!e.target.closest('.dropdown') && !e.target.closest('.file-bar')) closeMenus(); if(!e.target.closest('.ariel-row')) toggleSettings(false); });
+$('#toggle').addEventListener('click', () => { setEnabled(!state.enabled); if(state.enabled) setTimeout(() => speak("I'm back. Select a control and I'll explain what it does."), 140); });
+$('#gearBtn').addEventListener('click', e => { e.stopPropagation(); toggleSettings(); });
+$('#arielStage').addEventListener('load', () => { setEnabled(state.enabled); syncArielPrefs(); });
+[['movementPref','movement'],['reactivityPref','reactivity'],['sizePref','size']].forEach(([el,key])=>{
+  $('#'+el).addEventListener('input',e=>{ state[key]=Number(e.target.value); localStorage.setItem('ariel_'+key,String(state[key])); syncArielPrefs(); });
+});
+window.addEventListener('message',e=>{
+  const d=e.data||{}; if(d.type!=='ariel-stage-click') return;
+  const x=d.x*1024,y=d.y*537;
+  const menu=menuCells.find(c=>x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h);
+  if(menu){ openMenu(menu.id); return; }
+  const tool=toolCells.find(c=>x>=c.x&&x<=c.x+c.w&&y>=c.y&&y<=c.y+c.h);
+  if(tool){ closeMenus(); renderSelection(tool.id,true); } else closeMenus();
+});
+
+buildFileBar();
+new ResizeObserver(positionDropdowns).observe($('#stage'));
+buildToolHits();
+buildDropdowns();
+setEnabled(state.enabled);
+syncArielPrefs();
+renderSelection('texture', false);
+</script>
+</body>
+</html>
