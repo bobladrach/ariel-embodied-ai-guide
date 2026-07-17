@@ -21,7 +21,7 @@ The submitted prototype demonstrates Ari’el inside a VR Quest software-trainin
 - Uses gesture, proximity, and movement sound
 - Avoids blocking the cursor or selected controls
 - Preserves alignment when the browser is resized or zoomed
-- Supports a local-first interaction model
+- Supports a self-contained browser interaction model
 
 ## How Codex was used
 
