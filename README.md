@@ -1,6 +1,6 @@
 # Ari’el: An Embodied AI Guide
 
-Ari’el is a local-first embodied AI guide designed to help people understand complex software without leaving the application they are using.
+Ari’el is an embodied AI guide designed to help people understand complex software without leaving the application they are using.
 
 Instead of behaving like a separate chatbot or static help panel, Ari’el moves toward the control the user selected, acknowledges the action, explains the feature in context, speaks the explanation aloud, and uses animation and spatial sound to feel present inside the interface.
 
