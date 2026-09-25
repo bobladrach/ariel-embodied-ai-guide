@@ -1,5 +1,7 @@
 # Ari’el: An Embodied AI Guide
 
+> **Archive note — September 2026:** This repository preserves the OpenAI Build Week embodied-guide prototype. Ari’el has since evolved into a broader LIMINA / Person First AI system after more than three years of research and development. The current direction centers local, bounded intelligence that helps people think, explore, and decide without taking over their judgment. Current public site: https://arielpersonfirst.com/
+
 Ari’el is an embodied AI guide designed to help people understand complex software without leaving the application they are using.
 
 Instead of behaving like a separate chatbot or static help panel, Ari’el moves toward the control the user selected, acknowledges the action, explains the feature in context, speaks the explanation aloud, and uses animation and spatial sound to feel present inside the interface.
@@ -88,7 +90,7 @@ The demonstration is intended to run locally in a modern desktop browser.
 
 ## Status
 
-OpenAI Build Week submission in progress.
+Archived OpenAI Build Week prototype. Current Ari’el / LIMINA development continues under the Person First AI direction described above.
 
 ## Creator
 
